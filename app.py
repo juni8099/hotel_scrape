@@ -98,7 +98,7 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
                 if room_price:
                     break
                 time.sleep(1)  # Wait 1s before retry
-                st.write(room_price, _)
+                st.write(room_price, _, row)
             room_price = re.sub(r'[^\d]', '', str(room_price)) if room_price else None
             
 
