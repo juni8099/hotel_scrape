@@ -74,9 +74,41 @@ def extract_room_area(row):
         print(f"Error extracting room area: {e}")
         return None
         
+def extract_room_price(row):
+    try:
+        # Priority 1: Check prco-valign-middle-helper (common price display)
+        price_element = row.find('span', class_='prco-valign-middle-helper')
+        if price_element:
+            price_text = price_element.get_text(strip=True)
+            match = re.search(r'[\d,]+\.?\d*', price_text)
+            if match:
+                return match.group().replace(',', '')
+
+        # Priority 2: Check bui-u-sr-only (screen-reader text)
+        sr_only_elements = row.find_all('span', class_='bui-u-sr-only')
+        for element in sr_only_elements:
+            price_text = element.get_text(strip=True)
+            if "Price" in price_text:  # Only process elements containing "Price"
+                match = re.search(r'[\d,]+\.?\d*', price_text)
+                if match:
+                    return match.group().replace(',', '')
+
+        # Priority 3: Fallback to any numeric value in known price containers
+        fallback_elements = row.find_all(['span', 'div'], class_=lambda x: x and (
+            'price' in str(x).lower() or 'value' in str(x).lower()
+        ))
+        for element in fallback_elements:
+            price_text = element.get_text(strip=True)
+            match = re.search(r'[\d,]+\.?\d*', price_text)
+            if match:
+                return match.group().replace(',', '')
+
+        return None  # No price found
+
     except Exception as e:
-        print(f"Error extracting room area: {e}")
+        print(f"Error extracting room price: {e}")
         return None
+
 
 async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check_out_date: str, url: str) -> pd.DataFrame:
     soup = BeautifulSoup(html, 'html.parser')
@@ -92,16 +124,8 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
             room_name = row.find('span', class_='hprt-roomtype-icon-link')
             room_name = room_name.get_text(strip=True) if room_name else None
             
-            # Retry price extraction if missing
-            for _ in range(2):  # Retry twice
-                room_price = row.find('span', class_='prco-valign-middle-helper')
-                if room_price:
-                    break
-                time.sleep(1)  # Wait 1s before retry
-                st.write(room_price, _, row)
-            room_price = re.sub(r'[^\d]', '', str(room_price)) if room_price else None
+            room_price = extract_room_price(row)
             
-
             if extract_room_area(row):
                 area_unit, room_area = extract_room_area(row)
                 
