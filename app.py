@@ -44,6 +44,7 @@ def extract_room_area(row):
         
         # Search through all potential elements
         for element in area_elements:
+            st.write(element)
             text = ' '.join(element.stripped_strings)  # Get all text with normalized whitespace
             
             # More comprehensive regex pattern
@@ -312,68 +313,6 @@ def multi_string_input_with_preview(label: str = "Enter items"):
     
     return items
 
-def display_processing_progress(hotel_list, date_ranges, country, currency):
-    """Wrapper with progress UI for main_async"""
-    
-    # Setup progress containers
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    stats_cols = st.columns(3)
-    result_container = st.empty()
-    
-    total_operations = len(hotel_list) * len(date_ranges)
-    processed = 0
-    start_time = time.time()
-    all_dfs = []
-    
-    # Process each combination
-    for i, hotel in enumerate(hotel_list):
-        for j, date_range in enumerate(date_ranges):
-            # Update progress
-            processed += 1
-            progress = processed / total_operations
-            progress_bar.progress(progress)
-            
-            # Calculate metrics
-            elapsed = time.time() - start_time
-            speed = processed / elapsed if elapsed > 0 else 0
-            remaining = (total_operations - processed) * (elapsed / processed) if processed > 0 else 0
-            
-            # Update status
-            status_text.markdown(f"""
-            **Processing**: `{hotel}`  
-            **Dates**: {date_range[0]} to {date_range[1]}  
-            **Progress**: {processed}/{total_operations} ({progress:.0%})
-            """)
-            
-            stats_cols[0].metric("Speed", f"{speed:.1f} req/s")
-            stats_cols[1].metric("Elapsed", f"{elapsed:.1f}s")
-            stats_cols[2].metric("Remaining", f"{remaining:.1f}s")
-            
-            # Actual processing
-            try:
-                df = main_async([hotel], [date_range], country=country, currency=currency)
-                if not df.empty:
-                    all_dfs.append(df)
-                    result_container.dataframe(df.head(2))  # Preview
-            except Exception as e:
-                st.error(f"Error processing {hotel}: {str(e)}")
-                time.sleep(1)  # Prevent rate limiting
-    
-    # Combine results
-    final_df = pd.concat(all_dfs) if all_dfs else pd.DataFrame()
-    
-    # Cleanup progress UI
-    progress_bar.empty()
-    status_text.empty()
-    
-    if not final_df.empty:
-        st.balloons()
-        st.success(f"Completed! Collected {len(final_df)} room listings")
-    else:
-        st.warning("No data collected")
-    
-    return final_df
 
 # Streamlit UI
 
@@ -389,6 +328,8 @@ country, currency = country_currency_selectors()
 st.write(f"Selected: {country} | {currency}")
 
 hotel_list = multi_string_input("Enter hotel url names:")
+hotel_list = list(map(lambda x: x.lower(), hotel_list))
+
 st.write("Current items:", hotel_list)
 # Date input for start date
 start_date = st.date_input("Select a start date:")
