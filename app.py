@@ -50,7 +50,7 @@ def extract_room_area(row):
             # More comprehensive regex pattern
             area_match = re.search(
                 r'(\d+[,.]?\d*)\s*(?:m\²?|sq\.?\s*m|square\s*meters?|'
-                r'ft\²?|sq\.?\s*ft|square\s*feet|feet\s*squared)', 
+                r'ft\²?|sq\.?\s*ft|square\s*feet|feet\²)', 
                 text, 
                 flags=re.IGNORECASE
             )
