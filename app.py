@@ -82,11 +82,11 @@ def extract_room_price(row):
         sr_only_elements = row.find_all('span', class_='bui-u-sr-only')
         for element in sr_only_elements:
             price_text = element.get_text(strip=True)
-            if "Price" in price_text:  # Only process elements containing "Price"
+            if "price" in price_text:  # Only process elements containing "Price"
                 match = re.findall(r'[\d,]+\.?\d*', price_text)
-                print(len(match))
+                print(match)
                 if match:
-                    return match.group().replace(',', '')
+                    return match[-1].group().replace(',', '')
 
         # Priority 3: Fallback to any numeric value in known price containers
         st.write(row)
