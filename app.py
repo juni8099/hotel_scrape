@@ -88,14 +88,7 @@ def extract_room_price(row):
                     return match.group().replace(',', '')
 
         # Priority 3: Fallback to any numeric value in known price containers
-        fallback_elements = row.find_all(['span', 'div'], class_=lambda x: x and (
-            'price' in str(x).lower() or 'value' in str(x).lower()
-        ))
-        for element in fallback_elements:
-            price_text = element.get_text(strip=True)
-            match = re.search(r'[\d,]+\.?\d*', price_text)
-            if match:
-                return match.group().replace(',', '')
+        st.write(row)
 
         return None  # No price found
 
