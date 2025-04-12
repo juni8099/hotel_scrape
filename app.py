@@ -92,8 +92,13 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
             room_name = row.find('span', class_='hprt-roomtype-icon-link')
             room_name = room_name.get_text(strip=True) if room_name else None
             
-            room_price = row.find('span', class_='prco-valign-middle-helper')
-            st.write(room_price)
+            # Retry price extraction if missing
+            for _ in range(2):  # Retry twice
+                room_price = row.find('span', class_='prco-valign-middle-helper')
+                if room_price:
+                    break
+                time.sleep(1)  # Wait 1s before retry
+                st.write(room_price, _)
             room_price = re.sub(r'[^\d]', '', str(room_price)) if room_price else None
             
 
