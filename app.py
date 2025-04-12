@@ -376,6 +376,13 @@ def display_processing_progress(hotel_list, date_ranges, country, currency):
     return final_df
 
 # Streamlit UI
+
+st.set_page_config(
+    page_title="Hotel Scraper",  # This changes the browser tab title
+    page_icon="🏨",              # Optional: adds a favicon
+    layout="wide"
+)
+
 st.title("Hotel Room Price Scrapping")
 
 country, currency = country_currency_selectors()
@@ -388,7 +395,7 @@ start_date = st.date_input("Select a start date:")
 
 if st.button("Process Data"):
     if hotel_list:
-        result_df = main_async(hotel_list, generate_date_ranges(start_date, 365), country="sg", currency="SGD")
+        result_df = main_async(hotel_list, generate_date_ranges(start_date, 365), country=country, currency=currency)
         # 1. Remove rows where room_name is empty/NaN
         result_df = result_df.dropna(subset=['room_name'])
 
