@@ -44,23 +44,35 @@ def extract_room_area(row):
         
         # Search through all potential elements
         for element in area_elements:
-            st.write(element)
             text = ' '.join(element.stripped_strings)  # Get all text with normalized whitespace
             
-            # More comprehensive regex pattern
-            area_match = re.search(
-                r'(\d+[,.]?\d*)\s*(?:m\²?|sq\.?\s*m|square\s*meters?|'
-                r'ft\²?|sq\.?\s*ft|square\s*feet|feet\²)', 
-                text, 
-                flags=re.IGNORECASE
+            # More comprehensive regex pattern (supports "ft²", "sq ft", "m²", "sqm", etc.)
+            match = re.search(
+                r'(\d+[.,]?\d*)\s*(?:square\s*)?(feet²|ft²|sq\s*ft|m²|sqm|sq\s*m|meters²)',
+                text,
+                re.IGNORECASE
             )
             
-            if area_match:
-                # Clean and return the numeric value
-                area_value = area_match.group(1).replace(',', '')
-                return float(area_value) if '.' in area_value else int(area_value)
+            if match:
+                area_value = match.group(1).replace(',', '')  # Remove commas (e.g., "1,500" → "1500")
+                unit = match.group(2).lower()  # Normalize unit to lowercase
+                
+                # Convert unit to a standard format (e.g., "sq ft" → "feet²", "sqm" → "m²")
+                if unit in ['ft²', 'sq ft', 'sqft']:
+                    unit = 'feet²'
+                elif unit in ['m²', 'sqm', 'sq m']:
+                    unit = 'm²'
+                
+                # Convert area_value to float or int
+                area_value = float(area_value) if '.' in area_value else int(area_value)
+                
+                return (area_value, unit)
                 
         return None  # No area found
+
+    except Exception as e:
+        print(f"Error extracting room area: {e}")
+        return None
         
     except Exception as e:
         print(f"Error extracting room area: {e}")
@@ -83,7 +95,7 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
             room_price = row.find('span', class_='prco-valign-middle-helper')
             room_price = re.sub(r'[^\d]', '', str(room_price)) if room_price else None
             
-            room_area = extract_room_area(row)  # Using our improved area extractor
+            area_unit, room_area = extract_room_area(row)
             
             data.append({
                 'hotel_name': hotel_display_name,
@@ -92,7 +104,7 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
                 'room_name': room_name,
                 'room_price': room_price,
                 'room_area': room_area,
-                'area_unit': 'm²',  # Or modify extract_room_area() to return unit
+                'area_unit': area_unit,  # Or modify extract_room_area() to return unit
                 'url': url
             })
     
