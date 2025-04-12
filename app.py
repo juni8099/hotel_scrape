@@ -92,9 +92,8 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
             room_name = row.find('span', class_='hprt-roomtype-icon-link')
             room_name = room_name.get_text(strip=True) if room_name else None
             
-
-            st.write(row)
             room_price = row.find('span', class_='prco-valign-middle-helper')
+            st.write(room_price)
             room_price = re.sub(r'[^\d]', '', str(room_price)) if room_price else None
             
 
@@ -340,7 +339,8 @@ st.set_page_config(
 
 st.title("Hotel Room Price Scrapping")
 
-country, currency = country_currency_selectors()
+# country, currency = country_currency_selectors()
+country, currency = 'sg', 'SGD'
 st.write(f"Selected: {country} | {currency}")
 
 hotel_list = multi_string_input("Enter hotel url names:")
@@ -352,7 +352,7 @@ start_date = st.date_input("Select a start date:")
 
 if st.button("Process Data"):
     if hotel_list:
-        result_df = main_async(hotel_list, generate_date_ranges(start_date, 30), country=country.lower(), currency=currency)
+        result_df = main_async(hotel_list, generate_date_ranges(start_date, 365), country=country.lower(), currency=currency)
         if len(result_df) > 0:
             # 1. Remove rows where room_name is empty/NaN
             result_df = result_df.dropna(subset=['room_name'])
