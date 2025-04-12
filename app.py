@@ -395,7 +395,7 @@ start_date = st.date_input("Select a start date:")
 
 if st.button("Process Data"):
     if hotel_list:
-        result_df = main_async(hotel_list, generate_date_ranges(start_date, 365), country=country, currency=currency)
+        result_df = main_async(hotel_list, generate_date_ranges(start_date, 365), country=country.lower(), currency=currency)
         # 1. Remove rows where room_name is empty/NaN
         result_df = result_df.dropna(subset=['room_name'])
 
