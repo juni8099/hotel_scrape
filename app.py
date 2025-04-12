@@ -84,6 +84,7 @@ def extract_room_price(row):
             price_text = element.get_text(strip=True)
             if "Price" in price_text:  # Only process elements containing "Price"
                 match = re.search(r'[\d,]+\.?\d*', price_text)
+                print(len(match))
                 if match:
                     return match.group().replace(',', '')
 
