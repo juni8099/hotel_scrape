@@ -84,9 +84,17 @@ def extract_room_price(row):
             price_text = element.get_text(strip=True)
             if "price" in price_text:  # Only process elements containing "Price"
                 match = re.findall(r'[\d,]+\.?\d*', price_text)
-                print(match)
+                print("p2", match)
                 if match:
-                    return match[-1].group().replace(',', '')
+                    # first value in the list is the original price, while second value is the discounted price
+                    return match[-1].replace(',', '')
+            elif "Price" in price_text:
+                match = re.findall(r'[\d,]+\.?\d*', price_text)
+                print("p3", match)
+                if match:
+                    return match[-1].replace(',', '')
+
+
 
         # Priority 3: Fallback to any numeric value in known price containers
         st.write(row)
