@@ -55,18 +55,12 @@ def extract_room_area(row):
             
             if match:
                 area_value = match.group(1).replace(',', '')  # Remove commas (e.g., "1,500" → "1500")
-                unit = match.group(2).lower()  # Normalize unit to lowercase
-                
-                # Convert unit to a standard format (e.g., "sq ft" → "feet²", "sqm" → "m²")
-                if unit in ['ft²', 'sq ft', 'sqft']:
-                    unit = 'feet²'
-                elif unit in ['m²', 'sqm', 'sq m']:
-                    unit = 'm²'
+                area_unit = match.group(2).lower()  # Normalize unit to lowercase
                 
                 # Convert area_value to float or int
-                area_value = float(area_value) if '.' in area_value else int(area_value)
+                room_area = float(area_value) if '.' in area_value else int(area_value)
                 
-                return (area_value, unit)
+                return (room_area, area_unit)
                 
         return None  # No area found
 
@@ -109,7 +103,6 @@ def extract_room_price(row):
         print(f"Error extracting room price: {e}")
         return None
 
-
 async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check_out_date: str, url: str) -> pd.DataFrame:
     soup = BeautifulSoup(html, 'html.parser')
     data = []
@@ -127,7 +120,7 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
             room_price = extract_room_price(row)
             
             if extract_room_area(row):
-                area_unit, room_area = extract_room_area(row)
+                room_area, area_unit = extract_room_area(row)
                 
                 data.append({
                     'hotel_name': hotel_display_name,
@@ -136,7 +129,7 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
                     'room_name': room_name,
                     'room_price': room_price,
                     'room_area': room_area,
-                    'area_unit': area_unit,  # Or modify extract_room_area() to return unit
+                    'area_unit': area_unit,
                     'url': url
                 })
     
@@ -310,53 +303,7 @@ def multi_string_input(
     # Visual feedback about input mode
     st.caption(f"Using {active} input ({len(strings)} items)")
     
-    return strings
-
-def show_items_pretty(items, title="Current Items"):
-    if not items:
-        st.info("No items entered yet")
-        return
-    
-    st.markdown(f"### {title}")
-    container = st.container()
-    
-    for i, item in enumerate(items):
-        container.markdown(f"""
-        <div style="
-            animation: fadeIn 0.5s;
-            padding: 12px;
-            margin: 8px 0;
-            background: white;
-            border-left: 4px solid #4a8bfc;
-            border-radius: 0 8px 8px 0;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        ">
-            <div style="display: flex;">
-                <div style="color: #4a8bfc; margin-right: 10px;">▶</div>
-                <div>{item}</div>
-            </div>
-        </div>
-        
-        <style>
-            @keyframes fadeIn {{
-                0% {{ opacity: 0; transform: translateX(-10px); }}
-                100% {{ opacity: 1; transform: translateX(0); }}
-            }}
-        </style>
-        """, unsafe_allow_html=True)
-
-def multi_string_input_with_preview(label: str = "Enter items"):
-    items = multi_string_input(label)
-    
-    # Display the pretty version
-    if items:
-        show_items_pretty(items, "Your Items")
-        st.success(f"Total: {len(items)} items")
-    else:
-        st.info("No items added yet")
-    
-    return items
-
+    return list(map(lambda x: x.lower(), strings))
 
 # Streamlit UI
 
@@ -368,12 +315,10 @@ st.set_page_config(
 
 st.title("Hotel Room Price Scrapping")
 
-# country, currency = country_currency_selectors()
-country, currency = 'sg', 'SGD'
+country, currency = country_currency_selectors()
 st.write(f"Selected: {country} | {currency}")
 
 hotel_list = multi_string_input("Enter hotel url names:")
-hotel_list = list(map(lambda x: x.lower(), hotel_list))
 
 st.write("Current items:", hotel_list)
 # Date input for start date
