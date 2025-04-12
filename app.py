@@ -95,18 +95,20 @@ async def parse_hotel_page(html: str, hotel_name: str, check_in_date: str, check
             room_price = row.find('span', class_='prco-valign-middle-helper')
             room_price = re.sub(r'[^\d]', '', str(room_price)) if room_price else None
             
-            area_unit, room_area = extract_room_area(row)
-            
-            data.append({
-                'hotel_name': hotel_display_name,
-                'check_in_date': check_in_date,
-                'check_out_date': check_out_date,
-                'room_name': room_name,
-                'room_price': room_price,
-                'room_area': room_area,
-                'area_unit': area_unit,  # Or modify extract_room_area() to return unit
-                'url': url
-            })
+
+            if extract_room_area(row):
+                area_unit, room_area = extract_room_area(row)
+                
+                data.append({
+                    'hotel_name': hotel_display_name,
+                    'check_in_date': check_in_date,
+                    'check_out_date': check_out_date,
+                    'room_name': room_name,
+                    'room_price': room_price,
+                    'room_area': room_area,
+                    'area_unit': area_unit,  # Or modify extract_room_area() to return unit
+                    'url': url
+                })
     
     return pd.DataFrame(data)
 
@@ -181,7 +183,7 @@ def country_currency_selectors():
             index=0  # Default to USD
         )
     
-    return country_code, currency
+        return country_code, currency
 
 
     st.header("Dynamic String Input")
@@ -349,30 +351,32 @@ start_date = st.date_input("Select a start date:")
 if st.button("Process Data"):
     if hotel_list:
         result_df = main_async(hotel_list, generate_date_ranges(start_date, 365), country=country.lower(), currency=currency)
+        if len(result_df) > 0:
+            # 1. Remove rows where room_name is empty/NaN
+            result_df = result_df.dropna(subset=['room_name'])
+
+            # 2. For each date combination, keep only the cheapest version of each room
+            result_df = (result_df
+                        .sort_values('room_price')  # Sort by price to keep cheapest
+                        .groupby(['check_in_date', 'check_out_date', 'room_name'], as_index=False)
+                        .first()  # Takes the first (cheapest) occurrence
+                        .sort_values(['check_in_date', 'room_price'])  # Final sorting
+                        .reset_index(drop=True))
+
+            # 3. Reorder columns to put hotel_name first
+            column_order = ['hotel_name'] + [col for col in result_df.columns if col != 'hotel_name']
+            result_df = result_df[column_order]
+
+            # 4. Sort by check_in_date and hotel_name
+            result_df = result_df.sort_values(['check_in_date', 'hotel_name'])
+
+            # 5. Reset index for cleaner output
+            result_df = result_df.reset_index(drop=True)
+
+            st.dataframe(result_df)
         
-        st.dataframe(result_df)
-        # 1. Remove rows where room_name is empty/NaN
-        result_df = result_df.dropna(subset=['room_name'])
-
-        # 2. For each date combination, keep only the cheapest version of each room
-        result_df = (result_df
-                    .sort_values('room_price')  # Sort by price to keep cheapest
-                    .groupby(['check_in_date', 'check_out_date', 'room_name'], as_index=False)
-                    .first()  # Takes the first (cheapest) occurrence
-                    .sort_values(['check_in_date', 'room_price'])  # Final sorting
-                    .reset_index(drop=True))
-
-        # 3. Reorder columns to put hotel_name first
-        column_order = ['hotel_name'] + [col for col in result_df.columns if col != 'hotel_name']
-        result_df = result_df[column_order]
-
-        # 4. Sort by check_in_date and hotel_name
-        result_df = result_df.sort_values(['check_in_date', 'hotel_name'])
-
-        # 5. Reset index for cleaner output
-        result_df = result_df.reset_index(drop=True)
-
-        st.dataframe(result_df)
+        else:
+            st.warning("Check country, currency or hotel name inputs")
     
     else:
         st.warning("Please enter at least one item")
